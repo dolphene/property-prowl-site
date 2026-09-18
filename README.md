@@ -17,15 +17,13 @@ Both can also be triggered manually: `gh workflow run refresh-data.yml -R dolphe
 
 **Fetch `https://dolphene.github.io/property-prowl-site/site-data.json` client-side at runtime.** It's already fully computed — market_state, all six signals (with `real: true/false` flags), what_changed, translation, and the full 2006–2026 history for charts — so the Lovable app doesn't need to reimplement any of the derivation logic, just render this JSON. Re-fetch it on page load (or poll every few hours) to stay current; no auth/key needed, it's a public static file.
 
-### Adding the URA key later
+### URA key added 2026-09-18 — real property comparables engine live
 
-Once the AccessKey arrives (`https://www.ura.gov.sg/maps/api/reg.html`), add it once:
+The URA AccessKey is set (`gh secret set URA_ACCESS_KEY -R dolphene/property-prowl`) and confirmed working. Three real endpoints found by testing (not documented anywhere findable — see `property-prowl/scripts/fetch_ura_api.py`'s docstring): `PMI_Resi_Transaction` (caveat-level transactions), `PMI_Resi_Pipeline` (supply pipeline), `PMI_Resi_Rental_Median` (per-project rental). **Vacancy was not found** despite testing every plausible name — still an open gap.
 
-```
-gh secret set URA_ACCESS_KEY -R dolphene/property-prowl
-```
+`shared/comparables.js` implements the brief's Tier 1-4 comparables cascade (section 12) against real transactions, fetched live from `https://dolphene.github.io/property-prowl/transactions_flat.json` (district + 24-month filtered to the default watchlist, ~6MB). Wired into the "+ Stalk this property" form in `properties.html` / `js/app-properties.js` — adding a property now computes real value position (BELOW/FAIR/ABOVE COMPS), status, and confidence from actual URA data, not illustrative placeholders. The 3 starter demo properties are unchanged (still illustrative, clearly labeled) — only newly-added properties get real comparables.
 
-(pastes the value interactively, or pipe it in). The workflow already checks for this secret and will start pulling vacancy/pipeline data automatically on the next scheduled run — **but** `property-prowl/scripts/fetch_ura_api.py` still needs its `DATASET_ENDPOINTS` filled in first (the auth flow is implemented; the exact dataset URLs couldn't be verified without a real key — see that script's docstring for what to do once you can see the real API reference).
+**Known limitation**: URA's transaction data has no bedroom count, only floor area — the brief's "same bedroom" Tier 1/2 criterion is approximated with size similarity (±10/15/20% tolerance, per the brief's own guidance) instead. Comparables coverage is currently limited to the 10 default watchlist areas (districts 12/13/14/15/19/20) and the last 24 months, for prototype performance — full Singapore-wide, longer-history data exists (`property-prowl/data/processed/transactions_flat_full.json`, ~46MB) but wasn't shipped client-side; a real backend/database (Supabase, once this goes to Lovable) is the right place for that, not a client-fetched JSON blob.
 
 ## How the two projects share data
 

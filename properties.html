@@ -13,7 +13,7 @@
       <p class="sub">Your personal stalking list. Property status is separate from market status — a good property can be interesting even when the market overall is just WATCH.</p>
     </header>
 
-    <div class="data-note">Prototype note: comparables, rental evidence and yield below are illustrative placeholders — there's no live transaction-matching engine yet. Manually-added properties start at Low confidence with no evidence gathered.</div>
+    <div class="data-note">The 3 starter examples below use illustrative placeholder numbers. Properties you add yourself are matched against <b>real URA caveat transactions</b> (Tier 1-4 comparables, per the brief) — but URA's data has no bedroom field, only floor area, so size similarity substitutes for bedroom matching. Comparables data currently covers the default watch areas only, last 24 months.</div>
 
     <div class="panel">
       <div class="filters">
@@ -61,17 +61,39 @@
 
     <div class="panel" id="addPanel" style="display:none;">
       <h2>+ STALK THIS PROPERTY</h2>
-      <p class="desc">No automated listing lookup yet — enter what you know manually.</p>
+      <p class="desc">No automated listing lookup yet — enter what you know manually. Development name should match the official URA project name for real comparables to match (e.g. "SANT RITZ") — try a watch-area project if you're testing.</p>
       <form id="addForm">
         <div class="filters">
           <div class="field"><label>Listing URL (optional)</label><input type="url" id="inUrl" placeholder="https://..."></div>
-          <div class="field"><label>Development</label><input type="text" id="inName" required></div>
-          <div class="field"><label>Area</label><input type="text" id="inArea" required></div>
+          <div class="field"><label>Development (URA project name)</label><input type="text" id="inName" required placeholder="e.g. SANT RITZ"></div>
+          <div class="field">
+            <label>Location</label>
+            <select id="inArea" required>
+              <option value="">Select...</option>
+              <option>Serangoon</option><option>Kovan</option><option>Bartley</option><option>Bishan</option>
+              <option>Thomson</option><option>Toa Payoh</option><option>Potong Pasir</option><option>Paya Lebar</option>
+              <option>MacPherson</option><option>Katong</option>
+            </select>
+          </div>
+          <div class="field"><label>Size (sqft)</label><input type="number" id="inSize" min="200" step="10" placeholder="e.g. 950"></div>
+          <div class="field">
+            <label>Property type</label>
+            <select id="inPropertyType">
+              <option value="">Unspecified</option>
+              <option value="Condominium">Condominium</option>
+              <option value="Apartment">Apartment</option>
+              <option value="Executive Condominium">Executive Condominium</option>
+              <option value="Terrace">Terrace</option>
+              <option value="Semi-detached">Semi-detached</option>
+              <option value="Detached">Detached</option>
+            </select>
+          </div>
           <div class="field"><label>Bedrooms</label><input type="number" id="inBedrooms" min="1" max="6" value="3"></div>
           <div class="field"><label>Asking price ($)</label><input type="number" id="inAsking" min="0" step="1000" required></div>
         </div>
         <button class="btn" type="submit">Add to Prowl</button>
         <button class="btn ghost" type="button" id="btnCancelAdd">Cancel</button>
+        <span id="addStatus" style="font-size:12px;color:var(--text-muted);margin-left:8px;"></span>
       </form>
     </div>
 
@@ -81,6 +103,8 @@
   <script src="shared/news-data.js"></script>
   <script src="shared/nav.js"></script>
   <script src="shared/properties-store.js"></script>
+  <script src="shared/districts.js"></script>
+  <script src="shared/comparables.js"></script>
   <script src="js/app-properties.js"></script>
 </body>
 </html>
