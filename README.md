@@ -4,19 +4,42 @@ A second, separate static site implementing the full Property Prowl brand/UX bri
 
 **Scope chosen (per user direction):** full V1 multi-page site, built now with the real data we have, and clearly-labeled illustrative placeholders everywhere we don't yet have a real data source. Ask before assuming placeholder content is real.
 
+## Live, automated (as of 2026-09-18)
+
+Both projects are on GitHub and refresh themselves automatically twice a week via GitHub Actions — no manual script-running needed anymore:
+
+- **property-prowl**: https://github.com/dolphene/property-prowl (public) — fetches data.gov.sg, rebuilds the master dataset + signals, publishes `https://dolphene.github.io/property-prowl/master_quarterly_signals.json`. Runs Mon & Thu 22:00 UTC.
+- **property-prowl-site**: https://github.com/dolphene/property-prowl-site (public, this repo) — fetches property-prowl's published JSON, computes market state / six signals / What Changed / translation, publishes `https://dolphene.github.io/property-prowl-site/site-data.json`. Runs Tue & Fri 02:00 UTC (a few hours after property-prowl).
+
+Both can also be triggered manually: `gh workflow run refresh-data.yml -R dolphene/<repo>`.
+
+### For Lovable
+
+**Fetch `https://dolphene.github.io/property-prowl-site/site-data.json` client-side at runtime.** It's already fully computed — market_state, all six signals (with `real: true/false` flags), what_changed, translation, and the full 2006–2026 history for charts — so the Lovable app doesn't need to reimplement any of the derivation logic, just render this JSON. Re-fetch it on page load (or poll every few hours) to stay current; no auth/key needed, it's a public static file.
+
+### Adding the URA key later
+
+Once the AccessKey arrives (`https://www.ura.gov.sg/maps/api/reg.html`), add it once:
+
+```
+gh secret set URA_ACCESS_KEY -R dolphene/property-prowl
+```
+
+(pastes the value interactively, or pipe it in). The workflow already checks for this secret and will start pulling vacancy/pipeline data automatically on the next scheduled run — **but** `property-prowl/scripts/fetch_ura_api.py` still needs its `DATASET_ENDPOINTS` filled in first (the auth flow is implemented; the exact dataset URLs couldn't be verified without a real key — see that script's docstring for what to do once you can see the real API reference).
+
 ## How the two projects share data
 
 They are NOT two copies of the same analysis. There is one pipeline:
 
 ```
 data.gov.sg (URA)
-  → ../property-prowl/scripts/*.py        (fetch, merge, calibrate, classify)
-  → ../property-prowl/data/processed/master_quarterly_signals.csv   <- single source of truth
+  → property-prowl/scripts/*.py           (fetch, merge, calibrate, classify)
+  → property-prowl's published JSON       (GitHub Pages, see above) <- single source of truth
   → scripts/build_site_data.py            (THIS project, reshapes it for the brand UI)
-  → shared/data.js                        (embedded JS, no backend needed)
+  → shared/data.js + docs/site-data.json  (local prototype + Pages-published, for Lovable)
 ```
 
-`scripts/build_site_data.py` reads `../property-prowl/data/processed/master_quarterly_signals.csv` directly (a sibling relative path) and never re-derives price/rent/liquidity numbers itself. If the URA key arrives and `property-prowl`'s pipeline is re-run, re-run `python scripts/build_site_data.py` here too and both sites update from the same numbers.
+`scripts/build_site_data.py` reads from `PROWL_DATA_URL` (used in CI, points at property-prowl's live JSON) if set, otherwise falls back to the local sibling-folder CSV (`../property-prowl/data/processed/master_quarterly_signals.csv`) for offline local dev. It never re-derives price/rent/liquidity numbers itself.
 
 Because each site will eventually be uploaded to Lovable as an independent project, `shared/data.js` is a **generated, self-contained copy** — not a live cross-project reference. Re-generate it after any upstream pipeline change; don't hand-edit it.
 
