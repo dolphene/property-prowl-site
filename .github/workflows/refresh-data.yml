@@ -2,11 +2,10 @@ name: Refresh site data
 
 on:
   schedule:
-    # A few hours after property-prowl's own refresh (Mon & Thu 22:00 UTC).
+    # A few hours after property-prowl's own refresh (Mon & Thu 22:00 UTC),
+    # so it's reading property-prowl's already-updated published JSON.
     - cron: "0 2 * * 2,5"
   workflow_dispatch: {}
-  repository_dispatch:
-    types: [upstream-data-updated]
 
 permissions:
   contents: write
