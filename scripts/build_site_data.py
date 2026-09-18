@@ -7,13 +7,18 @@ reshapes it for the six-signal cards, "What Changed", and the historical
 charts. That's the "shared analytics" link between the two projects: one
 pipeline, two front ends.
 
-Vacancy, Supply Pressure, and Financing have no real data source yet (URA
-API key pending; financing/SORA was never sourced). Per user direction,
-those three signal cards use ILLUSTRATIVE placeholder content lifted
-directly from the product brief's own example text, clearly flagged
-`"real": false` so the front end can badge them "Illustrative -- not live
-data". Price Pressure, Rental Resilience, and Liquidity are fully real,
-computed from the same master dataset as the first dashboard.
+Vacancy still has no real data source (every plausible URA API service
+name was tried and rejected -- see property-prowl/scripts/fetch_ura_api.py).
+Its card stays an ILLUSTRATIVE placeholder, lifted from the product
+brief's own example text, flagged `"real": false`.
+
+Price Pressure, Rental Resilience, Liquidity, Supply Pressure, and
+Financing are all real now:
+  - Supply Pressure: real pipeline snapshot (total units + near-term
+    TOP-year breakdown) from URA's PMI_Resi_Pipeline. This is a snapshot,
+    not a time series -- no QoQ/YoY momentum until multiple runs build up
+    history.
+  - Financing: real 3-Month Compounded SORA from MAS via data.gov.sg.
 
 Data source: by default reads the sibling property-prowl project's local
 CSV (for local dev, where both folders sit side by side). Set the
@@ -63,6 +68,25 @@ def load_history():
     return [{k: to_value(k, v) for k, v in row.items()} for row in rows]
 
 
+def load_sibling_json(filename):
+    """Load a docs/<filename>.json published alongside master_quarterly_signals.json --
+    from the same base URL in CI, or the sibling property-prowl/docs/ folder locally."""
+    if DATA_URL:
+        base = DATA_URL.rsplit("/", 1)[0]
+        try:
+            with urllib.request.urlopen(f"{base}/{filename}") as resp:
+                return json.loads(resp.read())
+        except Exception:
+            return None
+    else:
+        # SRC_DIR = .../property-prowl/data/processed -> parent.parent = .../property-prowl
+        path = SRC_DIR.parent.parent / "docs" / filename
+        if not path.exists():
+            return None
+        with path.open(encoding="utf-8") as f:
+            return json.load(f)
+
+
 def price_pressure(latest):
     yoy, trend, qoq = latest["price_all_yoy_pct"], latest["price_all_4q_trend_pct"], latest["price_all_qoq_pct"]
     if yoy is None:
@@ -100,6 +124,58 @@ def liquidity(latest):
     return {"tier": "good", "arrow": "→", "headline": "Normalising"}
 
 
+def supply_pressure(snapshot):
+    if snapshot is None:
+        return None
+    total = snapshot["totalPipelineUnits"]
+    near_term = snapshot["nearTermUnits"]
+    near_term_years = snapshot["nearTermYears"]
+    unconfirmed = snapshot["unitsWithoutConfirmedTop"]
+    years_label = "-".join(near_term_years) if near_term_years else "n/a"
+    # No historical pipeline snapshots exist yet to compute real momentum
+    # against (data.gov.sg's own mirror is stale -- see property-prowl's
+    # README) -- "neutral" tier until we have >=2 runs to compare.
+    return {
+        "tier": "neutral",
+        "arrow": "→",
+        "headline": f"{total:,} units",
+        "detail": (
+            f"{total:,} units currently in the private residential pipeline across "
+            f"{snapshot['projectCount']} projects. {near_term:,} have a confirmed TOP "
+            f"in {years_label}; {unconfirmed:,} don't have a confirmed TOP year yet "
+            f"(still in planning)."
+        ),
+        "value": f"{total:,} units",
+        "real": True,
+    }
+
+
+def financing(snapshot):
+    if snapshot is None or not snapshot.get("monthly"):
+        return None
+    monthly = snapshot["monthly"]
+    latest_val = monthly[0]["sora3mCompounded"]
+    prev_val = monthly[1]["sora3mCompounded"] if len(monthly) > 1 else None
+    delta = (latest_val - prev_val) if prev_val is not None else None
+    if delta is None:
+        tier, arrow, headline = "neutral", "→", "Steady"
+    elif delta < -0.05:
+        tier, arrow, headline = "good", "↓", "Easier"
+    elif delta > 0.05:
+        tier, arrow, headline = "warning", "↑", "Tighter"
+    else:
+        tier, arrow, headline = "neutral", "→", "Steady"
+    delta_note = f" ({'down' if delta < 0 else 'up'} {abs(delta):.2f}pp from {monthly[1]['month']})" if delta is not None else ""
+    return {
+        "tier": tier,
+        "arrow": arrow,
+        "headline": headline,
+        "detail": f"3-Month Compounded SORA is {latest_val:.2f}% as of {monthly[0]['month']}{delta_note} -- the benchmark most floating-rate mortgages are priced against.",
+        "value": f"SORA {latest_val:.2f}%",
+        "real": True,
+    }
+
+
 TRANSLATIONS = {
     "WATCH": {
         "headline": "Nothing urgent here. Keep stalking from a distance.",
@@ -123,11 +199,17 @@ TRANSLATIONS = {
     },
 }
 
-# Illustrative-only content for the three signals with no real data source yet.
-# Lifted verbatim from the product brief's own example text (section 9),
-# not invented -- flagged real: false throughout.
+# Illustrative-only content for vacancy -- the one signal with genuinely
+# no real data source found. Lifted verbatim from the product brief's own
+# example text (section 9), not invented -- flagged real: false.
 PLACEHOLDER_SIGNALS = {
     "vacancy": {"tier": "warning", "arrow": "↑", "headline": "Rising", "detail": "Private residential vacancy reached 6.4%.", "real": False},
+}
+
+# Fallback placeholders for supply_pressure/financing, used only if their
+# snapshot files aren't reachable (e.g. URA_ACCESS_KEY not set yet, so
+# supply_snapshot.json was never published).
+FALLBACK_SIGNALS = {
     "supply_pressure": {"tier": "serious", "arrow": "↑", "headline": "Elevated", "detail": "Units under construction and GLS pipeline remain high relative to absorption.", "real": False},
     "financing": {"tier": "good", "arrow": "↓", "headline": "Easier", "detail": "SORA and mortgage rates have been trending down.", "real": False},
 }
@@ -161,10 +243,24 @@ def main():
     history = load_history()
     latest = history[-1]
 
+    supply_snapshot = load_sibling_json("supply_snapshot.json")
+    sora_snapshot = load_sibling_json("sora_snapshot.json")
+    supply_signal = supply_pressure(supply_snapshot)
+    financing_signal = financing(sora_snapshot)
+
+    if supply_signal is not None:
+        latest["pipeline_total_units"] = supply_snapshot["totalPipelineUnits"]
+        latest["pipeline_near_term_units"] = supply_snapshot["nearTermUnits"]
+    if financing_signal is not None:
+        latest["sora_3m_latest"] = sora_snapshot["monthly"][0]["sora3mCompounded"]
+        latest["sora_3m_month"] = sora_snapshot["monthly"][0]["month"]
+
     signals = {
         "price_pressure": {**price_pressure(latest), "real": True},
         "rental_resilience": {**rental_resilience(latest), "real": True},
         "liquidity": {**liquidity(latest), "real": True},
+        "supply_pressure": supply_signal or FALLBACK_SIGNALS["supply_pressure"],
+        "financing": financing_signal or FALLBACK_SIGNALS["financing"],
         **PLACEHOLDER_SIGNALS,
     }
 
