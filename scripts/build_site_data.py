@@ -14,13 +14,23 @@ directly from the product brief's own example text, clearly flagged
 `"real": false` so the front end can badge them "Illustrative -- not live
 data". Price Pressure, Rental Resilience, and Liquidity are fully real,
 computed from the same master dataset as the first dashboard.
+
+Data source: by default reads the sibling property-prowl project's local
+CSV (for local dev, where both folders sit side by side). Set the
+PROWL_DATA_URL env var to instead fetch property-prowl's published JSON
+(e.g. https://dolphene.github.io/property-prowl/master_quarterly_signals.json)
+-- this is what CI uses, since it avoids checking out two repos just to
+read one file.
 """
 import csv
 import json
+import os
+import urllib.request
 from pathlib import Path
 
 SRC_DIR = Path(__file__).resolve().parent.parent.parent / "property-prowl" / "data" / "processed"
 OUT_PATH = Path(__file__).resolve().parent.parent / "shared" / "data.js"
+DATA_URL = os.environ.get("PROWL_DATA_URL")
 
 NUMERIC_SUFFIXES = ("_pct", "_pts", "_index")
 NUMERIC_EXACT = {
@@ -44,8 +54,12 @@ def to_value(key, raw):
 
 
 def load_history():
-    with (SRC_DIR / "master_quarterly_signals.csv").open(encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+    if DATA_URL:
+        with urllib.request.urlopen(DATA_URL) as resp:
+            rows = json.loads(resp.read())
+    else:
+        with (SRC_DIR / "master_quarterly_signals.csv").open(encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
     return [{k: to_value(k, v) for k, v in row.items()} for row in rows]
 
 
@@ -158,7 +172,7 @@ def main():
     translation = TRANSLATIONS.get(state, TRANSLATIONS["WATCH"])
 
     site_data = {
-        "generated_from": "property-prowl/data/processed/master_quarterly_signals.csv",
+        "generated_from": DATA_URL or "property-prowl/data/processed/master_quarterly_signals.csv (local)",
         "latest_quarter": latest["quarter"],
         "market_state": state,
         "translation": translation,
@@ -174,8 +188,18 @@ def main():
         json.dump(site_data, f, indent=None)
         f.write(";\n")
 
+    # Plain JSON (no JS wrapper) published via GitHub Pages, for Lovable (or
+    # anything else) to fetch directly at runtime -- already fully computed
+    # (state, six signals, translation), so the consumer doesn't need to
+    # reimplement any of the derivation logic above.
+    docs_path = Path(__file__).resolve().parent.parent / "docs" / "site-data.json"
+    docs_path.parent.mkdir(parents=True, exist_ok=True)
+    with docs_path.open("w", encoding="utf-8") as f:
+        json.dump(site_data, f, indent=None)
+
     print(f"Latest quarter: {latest['quarter']}  state: {state}")
     print(f"Wrote {OUT_PATH}")
+    print(f"Wrote {docs_path}")
 
 
 if __name__ == "__main__":
