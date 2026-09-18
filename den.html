@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Property Prowl — The Den</title>
+<link rel="stylesheet" href="shared/brand.css">
+</head>
+<body data-page="den">
+  <div class="wrap">
+    <div id="gate" class="den-gate">
+      <div class="paw">🐾🔒</div>
+      <h1>The Den</h1>
+      <p style="color:var(--text-secondary);font-size:13.5px;">Your private property thesis, watch areas, and decision journal.</p>
+      <button class="btn" id="btnEnter">Enter (prototype — no real auth yet)</button>
+      <p class="warn">⚠️ This is a design prototype. There is <b>no real authentication</b> behind this gate — anyone with this page can enter. A production/Lovable build must replace this with proper auth (e.g. Supabase Auth, Lovable's built-in auth) before any real personal data goes here.</p>
+    </div>
+
+    <div id="denContent" style="display:none;">
+      <header class="page-head">
+        <h1>The Den 🔒</h1>
+        <p class="sub">Private layer. Not shown to other users of this product.</p>
+      </header>
+
+      <div class="panel">
+        <h2>My Property #2 Thesis</h2>
+        <p class="desc">Why we're looking, in our own words.</p>
+        <textarea id="thesisText" style="width:100%;min-height:90px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;color:var(--text-primary);" placeholder="e.g. Looking for a rental-now / home-later 3-bed in the OCR/city-fringe, targeting yield above 3.5% at entry..."></textarea>
+        <div style="margin-top:8px;"><button class="btn ghost" id="btnSaveThesis">Save</button></div>
+      </div>
+
+      <div class="panel">
+        <h2>Watch Areas</h2>
+        <p class="desc">Current priority locations (from the default watchlist).</p>
+        <div class="tag-row">
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Serangoon</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Kovan</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Bartley</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Bishan</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Thomson</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Toa Payoh</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Potong Pasir</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Paya Lebar</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">MacPherson</span>
+          <span class="tag" style="background:var(--surface-2);color:var(--text-secondary);">Katong</span>
+        </div>
+        <p class="desc" style="margin-top:10px;">Plus broader OCR and selected RCR / city-fringe. Excludes CCR.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Property Criteria</h2>
+        <p class="desc">What qualifies as interesting, for us specifically.</p>
+        <ul style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+          <li>2–3 bedrooms</li>
+          <li>Condo, EC, Landed, New Launch or Resale</li>
+          <li>Purpose: rental now + potential future home later</li>
+          <li>Gross yield at asking: 3.5%+ preferred (see Rental Thresholds)</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h2>Decision Journal</h2>
+        <p class="desc">What the market looked like, what we considered, why we did or didn't act.</p>
+        <div id="journalList"></div>
+        <div style="margin-top:12px;">
+          <div class="field"><label>New entry</label><textarea id="journalEntry" style="width:100%;min-height:60px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;font-family:inherit;font-size:13px;color:var(--text-primary);" placeholder="What happened, what we're thinking..."></textarea></div>
+          <button class="btn ghost" id="btnAddJournal">Add entry</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Why We Haven't Bought Yet</h2>
+        <p class="desc" id="whyNotYet"></p>
+      </div>
+
+      <div class="panel">
+        <span class="badge-illustrative" style="position:static;display:inline-block;margin-bottom:8px;">Illustrative</span>
+        <h2>Market Snapshots</h2>
+        <p class="desc">Historical snapshots of the dashboard at different points in time — not built yet. Would require periodically archiving the market state.</p>
+      </div>
+    </div>
+  </div>
+  <script src="shared/news-data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="js/app-den.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Property Prowl — Map</title>
+<link rel="stylesheet" href="shared/brand.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  #map { height: 560px; border-radius: 14px; border: 1px solid var(--border); }
+  .leaflet-popup-content-wrapper { background: var(--surface-1); color: var(--text-primary); border-radius: 10px; }
+  .leaflet-popup-content b { color: var(--brand-accent-dark); }
+</style>
+</head>
+<body data-page="map">
+  <div class="wrap">
+    <header class="page-head">
+      <h1>Map</h1>
+      <p class="sub">What's happening around a property, not just a pretty pin map. Lighter V1 version — no MRT/transaction/TOP overlays yet.</p>
+    </header>
+    <div class="data-note">Illustrative V1: markers show the default watchlist areas only. Development-level pins, transaction density, MRT lines, and TOP-date overlays are not built yet — see README.</div>
+    <div class="panel">
+      <div id="map"></div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="shared/news-data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script src="shared/properties-store.js"></script>
+  <script src="js/app-map.js"></script>
+</body>
+</html>

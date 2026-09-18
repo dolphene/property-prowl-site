@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Property Prowl — Properties</title>
+<link rel="stylesheet" href="shared/brand.css">
+</head>
+<body data-page="properties">
+  <div class="wrap">
+    <header class="page-head">
+      <h1>Properties</h1>
+      <p class="sub">Your personal stalking list. Property status is separate from market status — a good property can be interesting even when the market overall is just WATCH.</p>
+    </header>
+
+    <div class="data-note">Prototype note: comparables, rental evidence and yield below are illustrative placeholders — there's no live transaction-matching engine yet. Manually-added properties start at Low confidence with no evidence gathered.</div>
+
+    <div class="panel">
+      <div class="filters">
+        <div class="field">
+          <label>Location</label>
+          <select id="fLocation">
+            <option value="">All watch areas</option>
+            <option>Serangoon</option><option>Kovan</option><option>Bartley</option><option>Bishan</option>
+            <option>Thomson</option><option>Toa Payoh</option><option>Potong Pasir</option><option>Paya Lebar</option>
+            <option>MacPherson</option><option>Katong</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Property type</label>
+          <select id="fType">
+            <option value="">All types</option>
+            <option>Condo</option><option>EC</option><option>Landed</option><option>New Launch</option><option>Resale</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Bedrooms</label>
+          <select id="fBedrooms">
+            <option value="">Any</option><option value="2">2</option><option value="3">3</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="fStatus">
+            <option value="">Any status</option>
+            <option value="WATCH">Watch</option><option value="STALKING">Stalking</option>
+            <option value="GET_READY">Get Ready</option><option value="OPPORTUNITY">Opportunity</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Rental economics</label>
+          <select id="fRental">
+            <option value="">Any</option>
+            <option value="weak">Weak</option><option value="watch">Watch</option>
+            <option value="working">Working</option><option value="strong">Strong</option>
+          </select>
+        </div>
+        <button class="btn" id="btnAdd">+ Stalk this property</button>
+      </div>
+    </div>
+
+    <div class="panel" id="addPanel" style="display:none;">
+      <h2>+ STALK THIS PROPERTY</h2>
+      <p class="desc">No automated listing lookup yet — enter what you know manually.</p>
+      <form id="addForm">
+        <div class="filters">
+          <div class="field"><label>Listing URL (optional)</label><input type="url" id="inUrl" placeholder="https://..."></div>
+          <div class="field"><label>Development</label><input type="text" id="inName" required></div>
+          <div class="field"><label>Area</label><input type="text" id="inArea" required></div>
+          <div class="field"><label>Bedrooms</label><input type="number" id="inBedrooms" min="1" max="6" value="3"></div>
+          <div class="field"><label>Asking price ($)</label><input type="number" id="inAsking" min="0" step="1000" required></div>
+        </div>
+        <button class="btn" type="submit">Add to Prowl</button>
+        <button class="btn ghost" type="button" id="btnCancelAdd">Cancel</button>
+      </form>
+    </div>
+
+    <div class="property-grid" id="propertyGrid"></div>
+  </div>
+  <div class="tooltip" id="tooltip"></div>
+  <script src="shared/news-data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script src="shared/properties-store.js"></script>
+  <script src="js/app-properties.js"></script>
+</body>
+</html>

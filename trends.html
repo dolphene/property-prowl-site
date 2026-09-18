@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Property Prowl — Trends</title>
+<link rel="stylesheet" href="shared/brand.css">
+</head>
+<body data-page="trends">
+  <div class="wrap">
+    <header class="page-head">
+      <h1>Trends</h1>
+      <p class="sub">Have we seen this kind of market before? The deeper historical layer — 2006 to 2026, calibration not prediction.</p>
+    </header>
+
+    <div class="data-note">URA discontinued the combined "All Residential" rental index after 2021-Q3 — the Price vs Rent chart below uses the Non-Landed pair, which stays populated for the full 20 years.</div>
+
+    <div class="panel">
+      <h2>Price Index by Region</h2>
+      <p class="desc">Base 2009-Q1 = 100.</p>
+      <div class="legend" id="legendPrice"></div>
+      <div id="chartPrice"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Non-Landed Price vs Rent</h2>
+      <p class="desc">Same base, one axis — directly comparable. Where rent holds up while price falls, yields improve.</p>
+      <div class="legend" id="legendRent"></div>
+      <div id="chartRent"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Quarterly Transaction Volume (Liquidity)</h2>
+      <p class="desc">New Sale + Resale + Sub Sale units transacted per quarter.</p>
+      <div id="chartLiquidity"></div>
+    </div>
+
+    <div class="panel">
+      <span class="badge-illustrative" style="position:static;display:inline-block;margin-bottom:8px;">Illustrative</span>
+      <h2>Vacancy & Supply Pipeline</h2>
+      <p class="desc">No real historical vacancy/supply series yet (URA API key pending) — shown here as an illustrative placeholder of the eventual chart shape.</p>
+      <div id="chartSupplyPlaceholder" style="height:180px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;background:var(--surface-2);border-radius:10px;">Chart pending real vacancy/supply data</div>
+    </div>
+  </div>
+  <div class="tooltip" id="tooltip"></div>
+  <script src="shared/news-data.js"></script>
+  <script src="shared/nav.js"></script>
+  <script src="shared/data.js"></script>
+  <script src="shared/charts.js"></script>
+  <script src="js/app-trends.js"></script>
+</body>
+</html>
