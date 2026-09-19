@@ -7,18 +7,17 @@ reshapes it for the six-signal cards, "What Changed", and the historical
 charts. That's the "shared analytics" link between the two projects: one
 pipeline, two front ends.
 
-Vacancy still has no real data source (every plausible URA API service
-name was tried and rejected -- see property-prowl/scripts/fetch_ura_api.py).
-Its card stays an ILLUSTRATIVE placeholder, lifted from the product
-brief's own example text, flagged `"real": false`.
-
-Price Pressure, Rental Resilience, Liquidity, Supply Pressure, and
-Financing are all real now:
+All six signals are real now:
   - Supply Pressure: real pipeline snapshot (total units + near-term
     TOP-year breakdown) from URA's PMI_Resi_Pipeline. This is a snapshot,
     not a time series -- no QoQ/YoY momentum until multiple runs build up
     history.
   - Financing: real 3-Month Compounded SORA from MAS via data.gov.sg.
+  - Vacancy: real vacancy rate of completed private residential units,
+    scraped straight from URA's own quarterly press release text (no API
+    exposes this -- see property-prowl/scripts/fetch_ura_vacancy.py). If
+    that scrape is ever unreachable, falls back to an honest "not
+    available" placeholder rather than a stale/fake number.
 
 Data source: by default reads the sibling property-prowl project's local
 CSV (for local dev, where both folders sit side by side). Set the
@@ -176,6 +175,41 @@ def financing(snapshot):
     }
 
 
+def vacancy(snapshot):
+    if snapshot is None:
+        return None
+    rate = snapshot["rate"]
+    prev = snapshot.get("previousRate")
+    delta = (rate - prev) if prev is not None else None
+    if delta is None:
+        tier, arrow, headline = "neutral", "→", "Steady"
+    elif delta > 0.05:
+        tier, arrow, headline = "warning", "↑", "Rising"
+    elif delta < -0.05:
+        tier, arrow, headline = "good", "↓", "Falling"
+    else:
+        tier, arrow, headline = "neutral", "→", "Steady"
+    if delta is not None and delta > 0.05:
+        delta_note = f" (up from {prev:.1f}%)"
+    elif delta is not None and delta < -0.05:
+        delta_note = f" (down from {prev:.1f}%)"
+    else:
+        delta_note = ""
+    return {
+        "tier": tier,
+        "arrow": arrow,
+        "headline": headline,
+        "detail": (
+            f"Vacancy rate of completed private residential units (ex-ECs) was {rate:.1f}% "
+            f"as at the end of {snapshot['asOf']}{delta_note} -- sourced directly from URA's "
+            f"own quarterly release."
+        ),
+        "value": f"{rate:.1f}%",
+        "sourceUrl": snapshot["sourceUrl"],
+        "real": True,
+    }
+
+
 TRANSLATIONS = {
     "WATCH": {
         "headline": "Nothing urgent here. Keep stalking from a distance.",
@@ -199,21 +233,14 @@ TRANSLATIONS = {
     },
 }
 
-# Vacancy is the one signal with genuinely no free/public data source
-# found despite exhaustive search of URA's API and data.gov.sg mirrors --
-# URA does publish it, but only inside quarterly PDF press releases, not
-# through any queryable endpoint. Rather than show a number that never
-# changes and could be mistaken for real, this is explicit about the gap.
-PLACEHOLDER_SIGNALS = {
-    "vacancy": {"tier": "neutral", "arrow": "?", "headline": "Not available", "detail": "No free, automatable data source found for private residential vacancy. URA publishes it quarterly, but only in PDF press releases -- not through an API we can pull from.", "value": "No data source", "real": False},
-}
-
-# Fallback placeholders for supply_pressure/financing, used only if their
-# snapshot files aren't reachable (e.g. URA_ACCESS_KEY not set yet, so
-# supply_snapshot.json was never published).
+# Fallbacks used only if a signal's own snapshot file isn't reachable
+# (e.g. the URA vacancy scrape failed, or URA_ACCESS_KEY isn't set yet so
+# supply_snapshot.json/sora_snapshot.json were never published). Honest
+# about the gap rather than showing a stale or fake number.
 FALLBACK_SIGNALS = {
     "supply_pressure": {"tier": "serious", "arrow": "↑", "headline": "Elevated", "detail": "Units under construction and GLS pipeline remain high relative to absorption.", "real": False},
     "financing": {"tier": "good", "arrow": "↓", "headline": "Easier", "detail": "SORA and mortgage rates have been trending down.", "real": False},
+    "vacancy": {"tier": "neutral", "arrow": "?", "headline": "Not available", "detail": "Couldn't reach URA's latest quarterly release just now -- vacancy will show again once the next refresh succeeds.", "value": "No data source", "real": False},
 }
 
 
@@ -247,8 +274,10 @@ def main():
 
     supply_snapshot = load_sibling_json("supply_snapshot.json")
     sora_snapshot = load_sibling_json("sora_snapshot.json")
+    vacancy_snapshot = load_sibling_json("vacancy_snapshot.json")
     supply_signal = supply_pressure(supply_snapshot)
     financing_signal = financing(sora_snapshot)
+    vacancy_signal = vacancy(vacancy_snapshot)
 
     if supply_signal is not None:
         latest["pipeline_total_units"] = supply_snapshot["totalPipelineUnits"]
@@ -256,6 +285,9 @@ def main():
     if financing_signal is not None:
         latest["sora_3m_latest"] = sora_snapshot["monthly"][0]["sora3mCompounded"]
         latest["sora_3m_month"] = sora_snapshot["monthly"][0]["month"]
+    if vacancy_signal is not None:
+        latest["vacancy_rate"] = vacancy_snapshot["rate"]
+        latest["vacancy_as_of"] = vacancy_snapshot["asOf"]
 
     signals = {
         "price_pressure": {**price_pressure(latest), "real": True},
@@ -263,7 +295,7 @@ def main():
         "liquidity": {**liquidity(latest), "real": True},
         "supply_pressure": supply_signal or FALLBACK_SIGNALS["supply_pressure"],
         "financing": financing_signal or FALLBACK_SIGNALS["financing"],
-        **PLACEHOLDER_SIGNALS,
+        "vacancy": vacancy_signal or FALLBACK_SIGNALS["vacancy"],
     }
 
     state = latest["prowl_signal"] or "WATCH"
