@@ -199,11 +199,13 @@ TRANSLATIONS = {
     },
 }
 
-# Illustrative-only content for vacancy -- the one signal with genuinely
-# no real data source found. Lifted verbatim from the product brief's own
-# example text (section 9), not invented -- flagged real: false.
+# Vacancy is the one signal with genuinely no free/public data source
+# found despite exhaustive search of URA's API and data.gov.sg mirrors --
+# URA does publish it, but only inside quarterly PDF press releases, not
+# through any queryable endpoint. Rather than show a number that never
+# changes and could be mistaken for real, this is explicit about the gap.
 PLACEHOLDER_SIGNALS = {
-    "vacancy": {"tier": "warning", "arrow": "↑", "headline": "Rising", "detail": "Private residential vacancy reached 6.4%.", "real": False},
+    "vacancy": {"tier": "neutral", "arrow": "?", "headline": "Not available", "detail": "No free, automatable data source found for private residential vacancy. URA publishes it quarterly, but only in PDF press releases -- not through an API we can pull from.", "value": "No data source", "real": False},
 }
 
 # Fallback placeholders for supply_pressure/financing, used only if their
