@@ -268,6 +268,49 @@ def what_changed(latest, prev):
     return items
 
 
+# Proactive research feed, part 2: signal alerts. Not a new data source --
+# just flags on the six signals/quarterly figures already computed above,
+# so the Den can surface "worth a look" without the user checking the
+# Market page themselves. Deliberately reuses existing thresholds rather
+# than inventing new ones.
+PRICE_MOVE_THRESHOLD_PCT = 1.0
+
+
+def signal_alerts(signals: dict, latest: dict) -> list[dict]:
+    alerts = []
+    for key, signal in signals.items():
+        if signal.get("real") and signal.get("tier") in ("warning", "serious", "critical"):
+            alerts.append({
+                "type": "signal",
+                "signal": key,
+                "headline": signal["headline"],
+                "detail": signal.get("detail", f"{key.replace('_', ' ').title()} is currently '{signal['headline']}'."),
+                "tier": signal["tier"],
+            })
+
+    price_move = latest.get("price_all_qoq_pct")
+    if price_move is not None and abs(price_move) >= PRICE_MOVE_THRESHOLD_PCT:
+        alerts.append({
+            "type": "price_move",
+            "signal": "price_pressure",
+            "headline": f"Prices moved {'up' if price_move >= 0 else 'down'} {abs(price_move):.1f}% QoQ",
+            "detail": f"Private residential prices {'rose' if price_move >= 0 else 'fell'} {abs(price_move):.1f}% QoQ in {latest['quarter']} -- a move worth noting either direction.",
+            "tier": "warning" if price_move < 0 else "neutral",
+        })
+
+    rent_move = latest.get("rent_nonlanded_qoq_pct")
+    if rent_move is not None and abs(rent_move) >= PRICE_MOVE_THRESHOLD_PCT:
+        alerts.append({
+            "type": "price_move",
+            "signal": "rental_resilience",
+            "headline": f"Rents moved {'up' if rent_move >= 0 else 'down'} {abs(rent_move):.1f}% QoQ",
+            "detail": f"Non-landed rents {'rose' if rent_move >= 0 else 'fell'} {abs(rent_move):.1f}% QoQ in {latest['quarter']}.",
+            "tier": "warning" if rent_move < 0 else "neutral",
+        })
+
+    return alerts
+
+
 def main():
     history = load_history()
     latest = history[-1]
@@ -308,6 +351,7 @@ def main():
         "translation": translation,
         "signals": signals,
         "what_changed": what_changed(latest, history[-2] if len(history) > 1 else None),
+        "alerts": signal_alerts(signals, latest),
         "latest": latest,
         "history": history,
     }
